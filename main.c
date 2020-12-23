@@ -2,14 +2,20 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "resolution/resolution.h"
+#include <unistd.h>
+
 
 int main() {
-  //  printf("Started!\n");
-    char *bin = (char*) malloc(sizeof(char) * 1024);
-    scanf("%s", bin);
-  //  printf("Read the filename\n");
+    printf("$");
+    char *bin = NULL;
+    size_t len = 0;
+    getline(&bin, &len, stdin);
+    bin[strlen(bin) - 1] = '\0';
+    len--;
     resolution_result result = get_bin(bin, "/home/iancu/Desktop");
-    printf("%s",result.bin);
+    printf("%s", result.bin);
+
     return 0;
 }
