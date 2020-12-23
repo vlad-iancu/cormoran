@@ -3,4 +3,4 @@ project(Cormoran C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(Cormoran main.c resolution/resolution.h resolution/resolution.c)
+add_executable(Cormoran main.c resolution/resolution.h resolution/resolution.c exec/exec.h exec/exec.c)
