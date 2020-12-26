@@ -36,54 +36,24 @@ int execute(char *bin, char **args, int *read, int *write) {
     }
 }
 
-int execute_piped(char **piped_commands, int **fds, int i) {
-    if (piped_commands[i] == NULL) {
-        //  printf("Stopping at i = %d\n", i);
-        return 0;
-    }
-    pid_t child = fork();
+int execute_piped(char *command, char **args, int in, int out) {
+
+    pid_t child;
+    child = fork();
     if (child == 0) {
-        int rfd = -1;
-        int wfd = -1;
-        int read = 0;
-        int write = 0;
-        if (i != 0) {
-            rfd = fds[i - 1][0];
-            read = 1;
+        if (in != 0) {
+            dup2(in, 0);
+            close(in);
         }
-        if (fds[i] != NULL) {
-            wfd = fds[i][1];
-            write = 1;
+        if (out != 1) {
+            dup2(out, 1);
+            close(out);
         }
-        if (read) {
-            //     printf("Attaching stdin to pipe\n");
-            dup2(rfd, STDIN_FILENO);
-            close(rfd);
-
-        }
-        if (write) {
-            //     printf("Attaching stdout to pipe\n");
-            dup2(wfd, STDOUT_FILENO);
-            close(wfd);
-
-        }
-        // printf("We have this entire command:%s",piped_commands[i]);
-        char **args = get_args(piped_commands[i]);
-        // printf("I got these arguments from parent:\n");
-        int j;
-        /*for( j = 0;args[j] != NULL;j++) {
-            printf("%d:%s ",j, args[j]);
-        }
-        if(args[j] == NULL) {
-            printf("NULL");
-        }
-        printf("\n");
-        printf("Executing fork for i = %d\n", i);*/
-        execvp(args[0], args);
-    } else if (child < 0) return -1;
-    else if (child > 0) {
-        execute_piped(piped_commands, fds, i + 1);
+        if (resolve_builtin_command(command)) return 0;
+        else
+            return execvp(args[0], args);
     }
+    return child;
 }
 
 int launch_command(char *command) {
@@ -93,23 +63,23 @@ int launch_command(char *command) {
     if (resolve_builtin_command(command)) return 0;
     //char **cmdArgs = get_args(command);
     char **piped_commands = read_piped_commands(command);
-    char *cmd;
-    int **fds = (int **) malloc(sizeof(int *) * MAX_COMMANDS);
-    int piped_count = 0;
-    while (piped_commands[piped_count + 1] != NULL) {
-        fds[piped_count] = (int *) malloc(2 * sizeof(int));
-        pipe(fds[piped_count]);
-        piped_count++;
-    }
-    fds[piped_count] = NULL;
-    execute_piped(piped_commands, fds, 0);
-
-    for (int i = 0; piped_commands[i] != NULL; i++) {
+    int fds[2];
+    int rfd = 0;
+    int i = 0;
+    if (piped_commands[1] != NULL)
+        while (piped_commands[i] != NULL) {
+            pipe(fds);
+            int out = piped_commands[i+1] == NULL ? 1 : fds[1];
+            execute_piped(piped_commands[i], get_args(piped_commands[i]), rfd, out);
+            close(fds[1]);
+            rfd = fds[0];
+            i++;
+        }
+    else execute_piped(command, get_args(command), 0, 1);
+    i = 0;
+    while(piped_commands[i] != NULL) {
         wait(NULL);
-    }
-    for (int i = 0; i < piped_count; i++) {
-        close(fds[i][0]);
-        close(fds[i][1]);
+        i++;
     }
     return 0;
 }
