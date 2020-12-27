@@ -41,8 +41,9 @@ int launch_command(char *command) {
     // cd is even more special than the other special commands since it
     // cannot be executed inside fork (which means it cannot be piped)
     if(resolve_builtin_command(command)) return 0;
-
-    char **piped_commands = read_piped_commands(command);
+    char *copy_cmd = strdup(command);
+    char **piped_commands = read_piped_commands(copy_cmd);
+    free(copy_cmd);
     int fds[2];
     int rfd = 0;
     int i = 0;
@@ -50,16 +51,19 @@ int launch_command(char *command) {
         while (piped_commands[i] != NULL) {
             pipe(fds);
             int out = piped_commands[i+1] == NULL ? 1 : fds[1];
-            char **args = get_args(piped_commands[i]);
+            copy_cmd = strdup(piped_commands[i]);
+            char **args = get_args(copy_cmd);
             execute_piped(piped_commands[i], args, rfd, out);
             close(fds[1]);
             rfd = fds[0];
             i++;
+            free(copy_cmd);
             free(args);
         }
     else {
-        char **args = get_args(command);
-        execute_piped(command, get_args(command), 0, 1);
+        copy_cmd = strdup(command);
+        char **args = get_args(copy_cmd);
+        execute_piped(command, args, 0, 1);
         free(args);
     }
     i = 0;
@@ -67,6 +71,10 @@ int launch_command(char *command) {
         wait(NULL);
         i++;
     }
+    for(int k = 0;piped_commands[k] != NULL;k++) {
+        free(piped_commands[k]);
+    }
+    free(piped_commands);
     return 0;
 }
 
@@ -74,33 +82,39 @@ char **read_piped_commands(char *command) {
     char delim[] = "|";
     char **piped_commands = (char **) malloc(sizeof(char *) * MAX_COMMANDS);
     int piped_count = 0;
-    char *cmd = (char *) malloc(sizeof(char) * strlen(command));
-    strcpy(cmd, command);
     char *program = NULL;
-    program = strtok(cmd, delim);
+    program = strtok(command, delim);
     do {
-        piped_commands[piped_count] = (char *) malloc(strlen(program) * sizeof(char));
+        piped_commands[piped_count] = (char *) malloc((strlen(program) + 1) * sizeof(char));
         strcpy(piped_commands[piped_count], program);
         piped_count++;
     } while ((program = strtok(NULL, delim)) != NULL);
     piped_commands[piped_count] = NULL;
-    free(cmd);
     return piped_commands;
 }
 
 char **get_args(char *command) {
-    char *cmd = (char *) malloc(strlen(command) * sizeof(char));
-    strcpy(cmd, command);
-
-    char **args = (char **) malloc(MAX_ARGS * sizeof(char *));
-    int argc = 1;
     char delim[] = " ";
-    char *arg = strtok(cmd, delim);
+    char **args = (char**)malloc(MAX_ARGS * sizeof (char*));
+    char *arg = strtok(command, delim);
+    int argc = 1;
     args[0] = arg;
-    while ((arg = strtok(NULL, delim)) != NULL) {
+    while((arg = strtok(NULL, delim)) != NULL) {
         args[argc] = arg;
         argc++;
     }
     args[argc] = NULL;
     return args;
 }
+
+/*char **args = (char **) malloc(MAX_ARGS * sizeof(char *));
+    int argc = 1;
+    char delim[] = " ";
+    char *arg = strtok(command, delim);
+    args[0] = arg;
+    while ((arg = strtok(NULL, delim)) != NULL) {
+        args[argc] = arg;
+        argc++;
+    }
+    args[argc] = NULL;
+    return args;*/

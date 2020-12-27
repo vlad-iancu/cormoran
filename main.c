@@ -34,9 +34,9 @@ int main() {
     int cmdIndex = 0;
     int cmdCount = 0;
     size_t clen = 0;
-    FILE *log = fopen("log.txt", "w");
-    fprintf(log, "Begin logging\n");
-    fflush(log);
+   // FILE *log = fopen("log.txt", "w");
+   // fprintf(log, "Begin logging\n");
+   // fflush(log);
     getcwd(dir, PATH_MAX);
     int cursor = 0;
     do {

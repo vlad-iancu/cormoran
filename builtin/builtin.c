@@ -8,7 +8,7 @@
 #include <limits.h>
 #include <stdio.h>
 int resolve_builtin_command(char *command) {
-    char *temp = (char*)malloc(strlen(command) * sizeof (char));
+    char *temp = (char*)malloc((strlen(command) + 1) * sizeof (char));
     strcpy(temp, command);
     char delim[] = " ";
     char * cmd = strtok(temp, delim);
