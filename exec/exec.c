@@ -14,28 +14,6 @@
 const int MAX_ARGS = 1024;
 const int MAX_COMMANDS = 256;
 
-int execute(char *bin, char **args, int *read, int *write) {
-    pid_t child = fork();
-    if (child == 0) {
-        if (read[0]) {
-            close(write[1]);
-            dup2(read[1], STDIN_FILENO);
-        }
-        if (write[0]) {
-            close(read[1]);
-            dup2(write[1], STDOUT_FILENO);
-        }
-        if (!resolve_builtin_command(bin)) {
-            execvp(bin, args);
-        }
-    } else if (child < 0) {
-        return -1;
-    } else {
-        wait(NULL);
-        return 0;
-    }
-}
-
 int execute_piped(char *command, char **args, int in, int out) {
 
     pid_t child;
@@ -60,8 +38,10 @@ int launch_command(char *command) {
     if (isspace(command[strlen(command) - 1])) {
         command[strlen(command) - 1] = '\0';
     }
-    if (resolve_builtin_command(command)) return 0;
-    //char **cmdArgs = get_args(command);
+    // cd is even more special than the other special commands since it
+    // cannot be executed inside fork (which means it cannot be piped)
+    if(resolve_builtin_command(command)) return 0;
+
     char **piped_commands = read_piped_commands(command);
     int fds[2];
     int rfd = 0;
@@ -70,12 +50,18 @@ int launch_command(char *command) {
         while (piped_commands[i] != NULL) {
             pipe(fds);
             int out = piped_commands[i+1] == NULL ? 1 : fds[1];
-            execute_piped(piped_commands[i], get_args(piped_commands[i]), rfd, out);
+            char **args = get_args(piped_commands[i]);
+            execute_piped(piped_commands[i], args, rfd, out);
             close(fds[1]);
             rfd = fds[0];
             i++;
+            free(args);
         }
-    else execute_piped(command, get_args(command), 0, 1);
+    else {
+        char **args = get_args(command);
+        execute_piped(command, get_args(command), 0, 1);
+        free(args);
+    }
     i = 0;
     while(piped_commands[i] != NULL) {
         wait(NULL);
@@ -83,27 +69,6 @@ int launch_command(char *command) {
     }
     return 0;
 }
-
-/*if (isspace(command[cmdlen - 1]))
-        command[cmdlen - 1] = '\0';
-    char delim[] = " ";
-    if (strlen(command) > 0) {
-        char *cname = strtok(command, delim);
-        char **args = (char **) malloc(sizeof(char *) * MAX_ARGS);
-        args[0] = cname;
-        char *arg = strtok(NULL, delim);
-        int argi = 1;
-        while (arg != NULL) {
-            args[argi] = arg;
-            arg = strtok(NULL, delim);
-            argi++;
-        }
-        args[argi] = NULL;
-        int result = execute(cname, args, NULL, 0, 0);
-        free(args);
-        return result;
-    } else
-        return 0;*/
 
 char **read_piped_commands(char *command) {
     char delim[] = "|";
@@ -130,13 +95,12 @@ char **get_args(char *command) {
     char **args = (char **) malloc(MAX_ARGS * sizeof(char *));
     int argc = 1;
     char delim[] = " ";
-    char *arg = strtok(command, delim);
+    char *arg = strtok(cmd, delim);
     args[0] = arg;
     while ((arg = strtok(NULL, delim)) != NULL) {
         args[argc] = arg;
         argc++;
     }
     args[argc] = NULL;
-    free(cmd);
     return args;
 }

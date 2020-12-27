@@ -10,17 +10,7 @@
 void clear() {
     printf("\033[H\033[J");
 }
-void deleteChars(int echo) {
-    static struct termios oldt, newt;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    if(!echo)
-        newt.c_lflag &= ~(ICANON | ECHO);
-    else
-        newt.c_lflag &= ~(ICANON | ECHO);
 
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-}
 int getchr() {
     static struct termios oldt, newt;
     tcgetattr(STDIN_FILENO, &oldt);

@@ -40,12 +40,14 @@ int main() {
     getcwd(dir, PATH_MAX);
     int cursor = 0;
     do {
-        memset(command, '\0', clen);
+        int l = strlen(command);
+        for(int i = 0;i < l;i++) {
+            command[i] = '\0';
+        }
         clen = 0;
         printf("<#%s#cormoran>", dir);
         fflush(stdout);
-        command = (char *) malloc(sizeof(char) * CMD_LENGTH);
-        int clearOutput = 1;
+        //int clearOutput = 1;
         int c;
         do {
             c = getchr();
@@ -57,12 +59,10 @@ int main() {
                         command[i] = '\0';
                     }
                     strcpy(command, commandHistory[cmdIndex]);
-                    fprintf(log, "Command is now '%s' after up was pressed\n", command);
                     clear();
                     printf("<#%s#cormoran>%s", dir, command);
                     fflush(stdout);
                     clen = strlen(command);
-                    fflush(log);
                     cursor = clen;
                     continue;
                 }
@@ -87,8 +87,6 @@ int main() {
                     printf("\b");
                     printf(" ");
                     printf("\b");
-                    fprintf(log, "Deleted a character");
-                    fflush(log);
                     fflush(stdout);
                     fflush(stdin);
                 }
@@ -105,38 +103,29 @@ int main() {
                 }
 
             } else {
-                if (clearOutput) {
-                    clear();
-                    printf("<#%s#cormoran>", dir);
-                    fflush(stdout);
-                }
+                fflush(stdout);
                 command[clen] = (char) c;
                 printf("%c", c);
                 clen++;
                 cursor++;
             }
-            clearOutput = 0;
-
         } while (c != '\n');
+        if (isspace(command[0])) continue;
         commandHistory[cmdCount] = (char *) malloc(sizeof(char) * CMD_LENGTH);
-        int count = isspace(command[strlen(command) - 1]) ? strlen(command) - 1 : strlen(command);
         if (isspace(command[strlen(command) - 1])) {
             command[strlen(command) - 1] = '\0';
-            fprintf(log, "We have removed the whitespace at the end of the command\n");
         }
         strcpy(commandHistory[cmdCount], command);
         cmdCount++;
         cmdIndex = cmdCount;
-        fprintf(log, "We are executing command '%s'\n", command);
-        fflush(log);
-        if(strcmp(command, "history") == 0) {
-            for(int i = 0;i < cmdCount;i++) {
-                printf("%s\n",commandHistory[i]);
+        if (strcmp(command, "history") == 0) {
+            for (int i = 0; i < cmdCount; i++) {
+                printf("%s\n", commandHistory[i]);
             }
         } else
-        launch_command(command);
+            launch_command(command);
         int dirlen = strlen(dir);
-        for(int i = 0;i < dirlen; i++) {
+        for (int i = 0; i < dirlen; i++) {
             dir[i] = '\0';
         }
         getcwd(dir, PATH_MAX);
