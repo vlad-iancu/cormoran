@@ -1,3 +1,0 @@
-/home/iancu/Desktop/Cormoran/CMakeFiles/rebuild_cache.dir
-/home/iancu/Desktop/Cormoran/CMakeFiles/edit_cache.dir
-/home/iancu/Desktop/Cormoran/CMakeFiles/Cormoran.dir
