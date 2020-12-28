@@ -13,11 +13,6 @@
 
 #include <stdlib.h>
 
-#define cursorforward(x) printf("\033[%dC", (x))
-#define cursorbackward(x) printf("\033[%dD", (x))
-
-void clear();
-int getchr();
 void replace_string(char *str, size_t old_len);
 
 #endif //CORMORAN_UTILS_H

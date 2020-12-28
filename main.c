@@ -14,7 +14,6 @@
 #include <readline/history.h>
 
 //const int MAX_ARGS = 1024;
-const int CMD_LENGTH = 4096;
 const int MAX_CMDS = 4096;
 
 int main() {
@@ -28,8 +27,11 @@ int main() {
     int c = getchar();
     printf("%d %d %d", a, b, c);
     fflush(stdout);
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    return 0;*/
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);*/
+    char cmd[] = "ls -l -a | grep cmd > file.txt";
+    piped_commands *pipedCommands = get_piped_commands(cmd);
+
+    return 0;
     char *command;
     char *dir = (char *) malloc(sizeof(char) * PATH_MAX);
     char *prompt = (char *)malloc(sizeof (char) * PATH_MAX);

@@ -13,7 +13,7 @@
 
 const int MAX_ARGS = 1024;
 const int MAX_COMMANDS = 256;
-
+const int CMD_LENGTH = 4096;
 int execute_piped(char *command, char **args, int in, int out) {
 
     pid_t child;
@@ -40,7 +40,7 @@ int launch_command(char *command) {
     }
     // cd is even more special than the other special commands since it
     // cannot be executed inside fork (which means it cannot be piped)
-    if(resolve_builtin_command(command)) return 0;
+    if (resolve_builtin_command(command)) return 0;
     char *copy_cmd = strdup(command);
     char **piped_commands = read_piped_commands(copy_cmd);
     free(copy_cmd);
@@ -50,7 +50,7 @@ int launch_command(char *command) {
     if (piped_commands[1] != NULL)
         while (piped_commands[i] != NULL) {
             pipe(fds);
-            int out = piped_commands[i+1] == NULL ? 1 : fds[1];
+            int out = piped_commands[i + 1] == NULL ? 1 : fds[1];
             copy_cmd = strdup(piped_commands[i]);
             char **args = get_args(copy_cmd);
             execute_piped(piped_commands[i], args, rfd, out);
@@ -67,11 +67,11 @@ int launch_command(char *command) {
         free(args);
     }
     i = 0;
-    while(piped_commands[i] != NULL) {
+    while (piped_commands[i] != NULL) {
         wait(NULL);
         i++;
     }
-    for(int k = 0;piped_commands[k] != NULL;k++) {
+    for (int k = 0; piped_commands[k] != NULL; k++) {
         free(piped_commands[k]);
     }
     free(piped_commands);
@@ -93,13 +93,49 @@ char **read_piped_commands(char *command) {
     return piped_commands;
 }
 
+piped_commands *get_piped_commands(char *command) {
+    piped_commands *commands = (piped_commands *) malloc(sizeof(piped_commands));
+    commands->symbols = (int *) malloc(MAX_COMMANDS * sizeof(int));
+    commands->commands = (char **) malloc(MAX_COMMANDS * sizeof(char *));
+    char delim[] = "|>";
+    char *buf = (char *) malloc(sizeof(char) * CMD_LENGTH);
+    int k_buf = 0;
+    int k_sym = 0;
+    int k_command = 0;
+    for (int i = 0; command[i] != '\0'; i++) {
+        if (strchr(delim, command[i]) == NULL) {
+            buf[k_buf] = command[i];
+            k_buf++;
+        } else {
+            switch (command[i]) {
+                case '|': {
+                    commands->symbols[k_sym] = PIPE;
+                }
+                    break;
+                case '>': {
+                    commands->symbols[k_sym] = WRITE;
+                }
+                    break;
+            }
+            k_sym++;
+            buf[k_buf] = '\0';
+            commands->commands[k_command] = strdup(buf);
+            k_command++;
+            memset(buf, '\0', sizeof buf);
+            k_buf = 0;
+        }
+    }
+    free(buf);
+    return commands;
+}
+
 char **get_args(char *command) {
     char delim[] = " ";
-    char **args = (char**)malloc(MAX_ARGS * sizeof (char*));
+    char **args = (char **) malloc(MAX_ARGS * sizeof(char *));
     char *arg = strtok(command, delim);
     int argc = 1;
     args[0] = arg;
-    while((arg = strtok(NULL, delim)) != NULL) {
+    while ((arg = strtok(NULL, delim)) != NULL) {
         args[argc] = arg;
         argc++;
     }
