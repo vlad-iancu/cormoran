@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <termios.h>
 
-
 void clear() {
     printf("\033[H\033[J");
 }
@@ -42,3 +41,11 @@ int getchr() {
     return c;
 }
 
+void replace_string(char *str, size_t old_len) {
+    for(int i = 0; i < old_len; i++) {
+        printf("\b");
+        printf(" ");
+        printf("\b");
+    }
+    printf("%s", str);
+}

@@ -18,5 +18,6 @@
 
 void clear();
 int getchr();
+void replace_string(char *str, size_t old_len);
 
 #endif //CORMORAN_UTILS_H
