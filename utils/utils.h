@@ -15,6 +15,6 @@
 
 void replace_string(char *str, size_t old_len);
 
-void trim_space(char *str);
+char* trim_space(char *str);
 
 #endif //CORMORAN_UTILS_H

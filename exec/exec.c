@@ -59,7 +59,10 @@ int launch_command(char *command) {
             } else if (p_commands->symbols[i] == PIPE) {
                 out = fds[1];
             } else if (p_commands->symbols[i] == WRITE) {
-                file = fopen(p_commands->commands[i + 1], "w");
+                file = fopen(trim_space(p_commands->commands[i + 1]), "w");
+                out = fileno(file);
+            } else if(p_commands->symbols[i] == APPEND) {
+                file = fopen(trim_space(p_commands->commands[i + 1]), "a");
                 out = fileno(file);
             }
             copy_cmd = strdup(p_commands->commands[i]);
@@ -70,7 +73,7 @@ int launch_command(char *command) {
                 fclose(file);
             }
             rfd = fds[0];
-            if (p_commands->symbols[i] == WRITE) {
+            if (p_commands->symbols[i] == WRITE || p_commands->symbols[i] == APPEND) {
                 i++;
             }
             i++;
@@ -86,7 +89,7 @@ int launch_command(char *command) {
     }
     i = 0;
     while (p_commands->commands[i] != NULL) {
-        if(i == 0 || p_commands->symbols[i - 1] != WRITE)
+        if (i == 0 || p_commands->symbols[i - 1] != WRITE)
             wait(NULL);
         i++;
     }
@@ -97,21 +100,6 @@ int launch_command(char *command) {
     free(p_commands->commands);
     free(p_commands);
     return 0;
-}
-
-char **read_piped_commands(char *command) {
-    char delim[] = "|";
-    char **piped_commands = (char **) malloc(sizeof(char *) * MAX_COMMANDS);
-    int piped_count = 0;
-    char *program = NULL;
-    program = strtok(command, delim);
-    do {
-        piped_commands[piped_count] = (char *) malloc((strlen(program) + 1) * sizeof(char));
-        strcpy(piped_commands[piped_count], program);
-        piped_count++;
-    } while ((program = strtok(NULL, delim)) != NULL);
-    piped_commands[piped_count] = NULL;
-    return piped_commands;
 }
 
 piped_commands *get_piped_commands(char *command) {
@@ -134,7 +122,11 @@ piped_commands *get_piped_commands(char *command) {
                 }
                     break;
                 case '>': {
-                    commands->symbols[k_sym] = WRITE;
+                    if (command[i + 1] == '>') {
+                        commands->symbols[k_sym] = APPEND;
+                        i++;
+                    } else
+                        commands->symbols[k_sym] = WRITE;
                 }
                     break;
             }

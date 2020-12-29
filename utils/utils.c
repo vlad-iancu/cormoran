@@ -17,9 +17,12 @@ void replace_string(char *str, size_t old_len) {
     printf("%s", str);
 }
 
-void trim_space(char *str) {
+char *trim_space(char *str) {
     size_t len = strlen(str);
     for(int i = len - 1;i > 0 && isspace(str[i]);i--) {
         str[i] = '\0';
     }
+    int k = 0;
+    while(isspace(str[k])) k++;
+    return str + k;
 }
