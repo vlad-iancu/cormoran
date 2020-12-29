@@ -10,6 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "../builtin/builtin.h"
+#include "../utils/utils.h"
 
 const int MAX_ARGS = 1024;
 const int MAX_COMMANDS = 256;
@@ -42,18 +43,18 @@ int launch_command(char *command) {
     // cannot be executed inside fork (which means it cannot be piped)
     if (resolve_builtin_command(command)) return 0;
     char *copy_cmd = strdup(command);
-    char **piped_commands = read_piped_commands(copy_cmd);
+    piped_commands *p_commands = get_piped_commands(copy_cmd);
     free(copy_cmd);
     int fds[2];
     int rfd = 0;
     int i = 0;
-    if (piped_commands[1] != NULL)
-        while (piped_commands[i] != NULL) {
+    if (p_commands->commands[1] != NULL)
+        while (p_commands->commands[i] != NULL) {
             pipe(fds);
-            int out = piped_commands[i + 1] == NULL ? 1 : fds[1];
-            copy_cmd = strdup(piped_commands[i]);
+            int out = p_commands->commands[i + 1] == NULL ? 1 : fds[1];
+            copy_cmd = strdup(p_commands->commands[i]);
             char **args = get_args(copy_cmd);
-            execute_piped(piped_commands[i], args, rfd, out);
+            execute_piped(p_commands->commands[i], args, rfd, out);
             close(fds[1]);
             rfd = fds[0];
             i++;
@@ -64,17 +65,20 @@ int launch_command(char *command) {
         copy_cmd = strdup(command);
         char **args = get_args(copy_cmd);
         execute_piped(command, args, 0, 1);
+        free(copy_cmd);
         free(args);
     }
     i = 0;
-    while (piped_commands[i] != NULL) {
+    while (p_commands->commands[i] != NULL) {
         wait(NULL);
         i++;
     }
-    for (int k = 0; piped_commands[k] != NULL; k++) {
-        free(piped_commands[k]);
+    for (int k = 0; p_commands->commands[k] != NULL; k++) {
+        free(p_commands->commands[k]);
     }
-    free(piped_commands);
+    free(p_commands->symbols);
+    free(p_commands->commands);
+    free(p_commands);
     return 0;
 }
 
@@ -119,12 +123,18 @@ piped_commands *get_piped_commands(char *command) {
             }
             k_sym++;
             buf[k_buf] = '\0';
+            trim_space(buf);
             commands->commands[k_command] = strdup(buf);
             k_command++;
             memset(buf, '\0', sizeof buf);
             k_buf = 0;
         }
     }
+    k_sym++;
+    buf[k_buf] = '\0';
+    trim_space(buf);
+    commands->commands[k_command] = strdup(buf);
+    commands->commands[k_command + 1] = NULL;
     free(buf);
     return commands;
 }
@@ -142,15 +152,3 @@ char **get_args(char *command) {
     args[argc] = NULL;
     return args;
 }
-
-/*char **args = (char **) malloc(MAX_ARGS * sizeof(char *));
-    int argc = 1;
-    char delim[] = " ";
-    char *arg = strtok(command, delim);
-    args[0] = arg;
-    while ((arg = strtok(NULL, delim)) != NULL) {
-        args[argc] = arg;
-        argc++;
-    }
-    args[argc] = NULL;
-    return args;*/
