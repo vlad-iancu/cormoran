@@ -15,6 +15,7 @@
 const int MAX_ARGS = 1024;
 const int MAX_COMMANDS = 256;
 const int CMD_LENGTH = 4096;
+
 int execute_piped(char *command, char **args, int in, int out) {
 
     pid_t child;
@@ -51,12 +52,27 @@ int launch_command(char *command) {
     if (p_commands->commands[1] != NULL)
         while (p_commands->commands[i] != NULL) {
             pipe(fds);
-            int out = p_commands->commands[i + 1] == NULL ? 1 : fds[1];
+            FILE *file = NULL;
+            int out = 1;
+            if (p_commands->commands[i + 1] == NULL) {
+                out = 1;
+            } else if (p_commands->symbols[i] == PIPE) {
+                out = fds[1];
+            } else if (p_commands->symbols[i] == WRITE) {
+                file = fopen(p_commands->commands[i + 1], "w");
+                out = fileno(file);
+            }
             copy_cmd = strdup(p_commands->commands[i]);
             char **args = get_args(copy_cmd);
             execute_piped(p_commands->commands[i], args, rfd, out);
             close(fds[1]);
+            if (file != NULL) {
+                fclose(file);
+            }
             rfd = fds[0];
+            if (p_commands->symbols[i] == WRITE) {
+                i++;
+            }
             i++;
             free(copy_cmd);
             free(args);
@@ -70,7 +86,8 @@ int launch_command(char *command) {
     }
     i = 0;
     while (p_commands->commands[i] != NULL) {
-        wait(NULL);
+        if(i == 0 || p_commands->symbols[i - 1] != WRITE)
+            wait(NULL);
         i++;
     }
     for (int k = 0; p_commands->commands[k] != NULL; k++) {
