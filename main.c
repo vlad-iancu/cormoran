@@ -28,21 +28,30 @@ int main() {
     printf("%d %d %d", a, b, c);
     fflush(stdout);
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);*/
-    /*char cmd[] = "ls -l -a | grep cmd > file.txt";
-    piped_commands *pipedCommands = get_piped_commands(cmd);
+    /*char cmd[] = "ls -l -a | grep cmd > file.txt && ls -l ./Desktop";
+    char **chained_commands = get_chained_commands(cmd);
 
     return 0;*/
     char *command;
     char *dir = (char *) malloc(sizeof(char) * PATH_MAX);
-    char *prompt = (char *)malloc(sizeof (char) * PATH_MAX);
+    char *prompt = (char *) malloc(sizeof(char) * PATH_MAX);
     getcwd(dir, PATH_MAX);
 
     do {
         sprintf(prompt, "<#%s#cormoran>", dir);
         command = readline(prompt);
         fflush(stdout);
-        if(strlen(command) > 0) {
-            launch_command(command);
+        if (strlen(command) > 0) {
+            //launch_command(command);
+            char **commands = get_chained_commands(command);
+            int fail = 0;
+            for (int i = 0; commands[i] != NULL; i++){
+                if(!fail && launch_command(trim_space(commands[i]))) {
+                    fail = 1;
+                }
+                free(commands[i]);
+            }
+            free(commands);
             add_history(command);
         }
         getcwd(dir, PATH_MAX);

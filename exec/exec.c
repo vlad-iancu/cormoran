@@ -49,6 +49,7 @@ int launch_command(char *command) {
     int fds[2];
     int rfd = 0;
     int i = 0;
+    int result = 0;
     if (p_commands->commands[1] != NULL)
         while (p_commands->commands[i] != NULL) {
             pipe(fds);
@@ -61,13 +62,14 @@ int launch_command(char *command) {
             } else if (p_commands->symbols[i] == WRITE) {
                 file = fopen(trim_space(p_commands->commands[i + 1]), "w");
                 out = fileno(file);
-            } else if(p_commands->symbols[i] == APPEND) {
+            } else if (p_commands->symbols[i] == APPEND) {
                 file = fopen(trim_space(p_commands->commands[i + 1]), "a");
                 out = fileno(file);
             }
             copy_cmd = strdup(p_commands->commands[i]);
             char **args = get_args(copy_cmd);
-            execute_piped(p_commands->commands[i], args, rfd, out);
+            int res = execute_piped(p_commands->commands[i], args, rfd, out);
+            if(res) result = 1;
             close(fds[1]);
             if (file != NULL) {
                 fclose(file);
@@ -99,7 +101,7 @@ int launch_command(char *command) {
     free(p_commands->symbols);
     free(p_commands->commands);
     free(p_commands);
-    return 0;
+    return result;
 }
 
 piped_commands *get_piped_commands(char *command) {
@@ -146,6 +148,36 @@ piped_commands *get_piped_commands(char *command) {
     commands->commands[k_command + 1] = NULL;
     free(buf);
     return commands;
+}
+
+char **get_chained_commands(char *command) {
+    size_t len = strlen(command);
+    char **chained_commands = (char **) malloc(sizeof(char *) * MAX_COMMANDS);
+    char *buf = (char *) malloc(sizeof(char) * CMD_LENGTH);
+    int k_buf = 0;
+    int k_command = 0;
+    for (int i = 0; i < len; i++) {
+        if (command[i] == '&' && command[i + 1] == '&') {
+            chained_commands[k_command] = (char*)malloc(sizeof(char) * CMD_LENGTH);
+            trim_space(buf);
+            strcpy(chained_commands[k_command], buf);
+            memset(buf, '\0', CMD_LENGTH);
+            k_command++;
+            i++;
+            k_buf = 0;
+        }
+        else {
+            buf[k_buf] = command[i];
+            k_buf++;
+        }
+    }
+    chained_commands[k_command] = (char*)malloc(sizeof(char) * CMD_LENGTH);
+    buf[k_buf] = '\0';
+    strcpy(chained_commands[k_command], buf);
+    free(buf);
+    chained_commands[k_command + 1] = NULL;
+    return chained_commands;
+
 }
 
 char **get_args(char *command) {

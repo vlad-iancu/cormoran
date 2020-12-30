@@ -11,7 +11,7 @@ Cormoran
 Cormoran.cbp
 # Generated files
 .idea/**/contentModel.xml
-
+valgrind-out.txt
 # Sensitive or high-churn files
 .idea/**/dataSources/
 .idea/**/dataSources.ids

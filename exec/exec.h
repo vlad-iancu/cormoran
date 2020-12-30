@@ -9,9 +9,8 @@
 #define APPEND -3
 #define PIPE  -4
 int launch_command(char *command);
-char **read_piped_commands(char *command);
 char **get_args(char *command);
-
+char **get_chained_commands(char *command);
 typedef struct piped_commands {
     char **commands;
     int *symbols;
