@@ -220,6 +220,7 @@ char **get_args_spaced(char *command) {
   /*  int i;
     for(i = 0;args[i] != NULL && strlen(args[i]) != 0;i++);
     args[i] = NULL;*/
+    args[argc][argl] = '\0';
     args[argc + 1] = NULL;
     return args;
 }
