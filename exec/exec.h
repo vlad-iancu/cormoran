@@ -11,6 +11,7 @@
 int launch_command(char *command);
 char **get_args(char *command);
 char **get_chained_commands(char *command);
+char **get_args_spaced(char *command);
 typedef struct piped_commands {
     char **commands;
     int *symbols;

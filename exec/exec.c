@@ -67,9 +67,9 @@ int launch_command(char *command) {
                 out = fileno(file);
             }
             copy_cmd = strdup(p_commands->commands[i]);
-            char **args = get_args(copy_cmd);
+            char **args = get_args_spaced(trim_space(copy_cmd));
             int res = execute_piped(p_commands->commands[i], args, rfd, out);
-            if(res) result = 1;
+            if (res) result = 1;
             close(fds[1]);
             if (file != NULL) {
                 fclose(file);
@@ -80,12 +80,14 @@ int launch_command(char *command) {
             }
             i++;
             free(copy_cmd);
+            for (int i = 0; args[i] != NULL; i++) free(args[i]);
             free(args);
         }
     else {
         copy_cmd = strdup(command);
-        char **args = get_args(copy_cmd);
+        char **args = get_args_spaced(trim_space(copy_cmd));
         execute_piped(command, args, 0, 1);
+        for (int i = 0; args[i] != NULL; i++) free(args[i]);
         free(copy_cmd);
         free(args);
     }
@@ -158,20 +160,19 @@ char **get_chained_commands(char *command) {
     int k_command = 0;
     for (int i = 0; i < len; i++) {
         if (command[i] == '&' && command[i + 1] == '&') {
-            chained_commands[k_command] = (char*)malloc(sizeof(char) * CMD_LENGTH);
+            chained_commands[k_command] = (char *) malloc(sizeof(char) * CMD_LENGTH);
             trim_space(buf);
             strcpy(chained_commands[k_command], buf);
             memset(buf, '\0', CMD_LENGTH);
             k_command++;
             i++;
             k_buf = 0;
-        }
-        else {
+        } else {
             buf[k_buf] = command[i];
             k_buf++;
         }
     }
-    chained_commands[k_command] = (char*)malloc(sizeof(char) * CMD_LENGTH);
+    chained_commands[k_command] = (char *) malloc(sizeof(char) * CMD_LENGTH);
     buf[k_buf] = '\0';
     strcpy(chained_commands[k_command], buf);
     free(buf);
@@ -191,5 +192,34 @@ char **get_args(char *command) {
         argc++;
     }
     args[argc] = NULL;
+    return args;
+}
+
+char **get_args_spaced(char *command) {
+    char **args = (char **) malloc(MAX_ARGS * sizeof(char *));
+    int argc = 0;
+    int argl = 0;
+    args[0] = (char *) malloc(CMD_LENGTH * sizeof(char));
+    size_t len = strlen(command);
+
+    int quotes = 0;
+    for (int i = 0; i < len; i++) {
+        char ch = command[i];
+        if (isspace(ch) && !quotes) {
+            args[argc][argl] = '\0';
+            argc++;
+            argl = 0;
+            args[argc] = (char *) malloc(CMD_LENGTH * sizeof(char));
+        } else if (ch == '\"') {
+            quotes = (quotes + 1) % 2;
+        } else {
+            args[argc][argl] = ch;
+            argl++;
+        }
+    }
+  /*  int i;
+    for(i = 0;args[i] != NULL && strlen(args[i]) != 0;i++);
+    args[i] = NULL;*/
+    args[argc + 1] = NULL;
     return args;
 }

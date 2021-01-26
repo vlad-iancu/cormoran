@@ -17,20 +17,7 @@
 const int MAX_CMDS = 4096;
 
 int main() {
-    /*static struct termios oldt, newt;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    int a = getchar();
-    int b = getchar();
-    int c = getchar();
-    printf("%d %d %d", a, b, c);
-    fflush(stdout);
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);*/
-    /*char cmd[] = "ls -l -a | grep cmd > file.txt && ls -l ./Desktop";
-    char **chained_commands = get_chained_commands(cmd);
-
+    /*char **args = get_args_spaced("git commit -m \"Spaced args\"");
     return 0;*/
     char *command;
     char *dir = (char *) malloc(sizeof(char) * PATH_MAX);
