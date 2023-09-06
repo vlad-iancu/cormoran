@@ -3,6 +3,8 @@ This project was built using [CMake](https://cmake.org/cmake/help/latest/guide/t
 
 Building the project:
 ```
-cmake .
-cmake --build .
+mkdir build
+cd build
+cmake ..
+make
 ```
